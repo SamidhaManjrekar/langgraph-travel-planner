@@ -20,6 +20,7 @@ api_app = FastAPI(
 origins = [
     "http://localhost",
     "http://localhost:5173",
+    "https://itinerary-generator.onrender.com",
     "http://127.0.0.1", 
 ]
 
