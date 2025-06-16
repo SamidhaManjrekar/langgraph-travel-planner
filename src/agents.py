@@ -3,6 +3,7 @@ import logging
 import re
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Union, Optional
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain.agents import AgentExecutor, create_tool_calling_agent
@@ -64,7 +65,8 @@ def info_extractor_agent_node(state: TravelPlannerState):
 
     Infer missing details where possible (e.g., IATA codes for cities/countries).
     If a country is provided for source/destination, use the IATA code of its most prominent or capital city's airport (e.g., 'USA' -> 'JFK' or 'LAX', 'UK' -> 'LHR').
-    If a country is provided for the hotel city, pick its most prominent city for tourism (e.g., 'Australia' -> 'Sydney', 'France' -> 'Paris').
+    **IMPORTANT: Ensure IATA codes are exactly 3 uppercase letters, without any surrounding quotes.**
+    If a country is provided for the hotel city, pick its most prominent city for tourism (e.g., 'Australia' -> 'Sydney', 'France' -> 'Paris'). **Ensure 'hotel_city' is always populated.**
 
     The number of days should be calculated based on departure and return dates.
     If 'no_of_children' is not specified, default to 0.
@@ -241,7 +243,8 @@ def destination_agent_node(state: TravelPlannerState):
              For 'activities':
              - Suggest suitable activities for the user's destination, travel dates,
                the arrival time of the plane (if available), and activity preferences.
-             - Make sure to add activities for each day after considering the arrival time of the flight and the number of days available.
+             - Make sure to add **3-4** activities for each day after considering the arrival time of the flight and the number of days available.
+             - MAKE SURE THAT EVERY DAY HAS AT LEAST ONE ACTIVITY INCLUDING THE LAST DAY. AND TRY TO FILL EACH DAY WITH 3-4 ACTIVITIES.
              - If the destination is a country, suggest activities in its most prominent cities while considering travel logistics (e.g., For Japan, suggest activities in Tokyo, Kyoto, and Osaka if there are enough days).
              - Provide: **Activity Name**, a small **Description**, typical **Ticket Price** (if applicable, e.g., '$45-$80' or 'Free'), and **Best Time to Visit** (e.g., 'Morning', 'Afternoon', 'Evening', 'All day').
 
@@ -314,6 +317,7 @@ def itinerary_agent_node(state: TravelPlannerState):
     if hotel_results and hotel_results.get("hotels"):
         for hotel_data in hotel_results["hotels"]:
             try:
+                price_value = hotel_data.get("price_per_night", "N/A") 
                 if isinstance(price_value, (int, float)):
                     price_value = f"${price_value}"
                     
@@ -340,8 +344,8 @@ def itinerary_agent_node(state: TravelPlannerState):
                 ("system", """You are a hotel expert that specialized in providing descriptive details for hotels across the world.
                  Given a hotel name, its city, and some existing details, provide:
                  - **Address**: The exact address of the hotel mentioned.
-                 - **Description**: A concise, appealing description (1 sentences) highlighting its style, offerings, and target audience.
-                 - **Perks**: A small line summarizing the unique perks of staying at that hotel.
+                 - **Description**: A concise, appealing description (in less than 14 words) highlighting its style, offerings, and target audience.
+                 - **Perks**: A small line (in less than 12 words) summarizing the unique perks of staying at that hotel.
 
                  Base your response on general knowledge about hotels and cities.
                  Format your output strictly as plain text with clear labels for each piece of information.
@@ -349,6 +353,10 @@ def itinerary_agent_node(state: TravelPlannerState):
                  Address: 15 Parliament Street, Connaught Place, New Delhi, Delhi 110001, India
                  Description: A stylish hotel with modern amenities and excellent service, ideal for a comfortable stay.
                  Perks: Located in the heart of Delhi, close to major attractions and transport links.
+
+                 If you do not know the answer, just try to make an educated guess but never leave it blank.
+                 If you do make a guess don't mention that in the response, just provide the guessed information as if it was factual.
+                 Do NOT include any conversational text or explanations in your response like "This is a fictional address" etc.
                  """),
                 ("human", """Hotel Name: {hotel_name}
                  City: {hotel_city}
@@ -422,9 +430,11 @@ def itinerary_agent_node(state: TravelPlannerState):
              For 'itinerary' (daily activities):
              - You MUST create an `ItineraryItem` object for EACH day of the trip, starting from the `arrival_time` of the last flight provided in the `flights_json`.
              - Each `ItineraryItem` must include `day` (1-indexed), `date` (YYYY-MM-DD), `city` (which is the hotel city or main destination city), and a `List[ItineraryActivityDetail]` for `activities`.
-             - Distribute the activities provided in `activities_list_json` *evenly and logically* across ALL the days. Do NOT put all activities on one day. But make sure each day has **at least one activity** if possible.
-             - If there are fewer activities than days, some days may have fewer activities listed. If there are many activities, spread them out appropriately, suggesting 1-3 activities per day.
-             - Use the exact `activity_name`, `description`, `ticket_price`, and `best_time_to_visit` from the `activities_list_json`. If `ticket_price` is not explicitly mentioned, use "Varies" or "Check locally".
+             - Distribute the activities provided in `activities_list_json` *evenly and logically* across ALL the days including the return_date. Do NOT put all activities on one day.
+             - Make sure each day has **at least one activity** if possible.
+             - Make sure that the return_date also has at least one activity listed, even if it's a short one.
+             - If there are fewer activities than days, some days may have fewer activities listed. If there are many activities, spread them out appropriately, suggesting 2-3 activities per day.
+             - Use the exact 'activity_name', 'description', 'ticket_price', and 'best_time_to_visit' from the `activities_list_json`. If 'ticket_price' is not explicitly mentioned, use "Varies" or "Check locally".
 
              For 'flight':
              - Ensure `airline`, `departure_time`, `arrival_time`, `departure_airport`, `arrival_airport`, and `price` are accurately included for each flight leg from `flights_json`.
