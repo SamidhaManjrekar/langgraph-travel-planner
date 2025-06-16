@@ -9,7 +9,6 @@ from .config import SERPAPI_API_KEY
 
 logger = logging.getLogger(__name__)
 
-# --- Pydantic Models for Tool Inputs ---
 class FlightInput(BaseModel):
     source: str = Field(description="The 3-letter IATA airport code for the departure location (e.g., 'DXB').")
     destination: str = Field(description="The 3-letter IATA airport code for the arrival location (e.g., 'SYD').")
@@ -173,5 +172,5 @@ def hotel_search(place: str,
         "hotels": simplified_hotels
     }
     
-# --- List of all tools ---
+
 all_tools = [fetch_flights, hotel_search]
