@@ -21,7 +21,8 @@ origins = [
     "http://localhost",
     "http://localhost:5173",
     "https://itinerary-generator.onrender.com",
-    "http://127.0.0.1", 
+    "http://127.0.0.1",
+    "https://globetrekker-q2fj.onrender.com", 
 ]
 
 api_app.add_middleware(
