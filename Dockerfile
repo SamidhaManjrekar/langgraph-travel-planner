@@ -1,14 +1,15 @@
-    FROM python:3.11-slim-buster
+FROM python:3.11-slim-buster
 
-    WORKDIR /app
+WORKDIR /app
 
-    COPY requirements.txt .
+RUN pip install uv
 
-    RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements.txt .
 
-    COPY . .
+RUN uv pip install --system -r requirements.txt
 
-    EXPOSE 8001
-    
-    CMD ["uvicorn", "src.main:api_app", "--host", "0.0.0.0", "--port", "8001"]
-    
+COPY . .
+
+EXPOSE 8001
+
+CMD ["uvicorn", "src.main:api_app", "--host", "0.0.0.0", "--port", "8001"]
