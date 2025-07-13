@@ -215,7 +215,7 @@ def hotel_agent_node(state: TravelPlannerState):
         if tool_output.get("note"):
             current_notes.append(tool_output["note"])
         
-        logger.debug(f"Hotel Tool Output (raw): {tool_output}")
+        # logger.debug(f"Hotel Tool Output (raw): {tool_output}")
 
         return {"hotel_results": tool_output, "notes": current_notes}
 
@@ -463,8 +463,9 @@ def itinerary_agent_node(state: TravelPlannerState):
             ("human", """Generate the comprehensive travel itinerary as a JSON object:""")
         ]
     )
-
     flights_json = [f.model_dump() for f in flights_for_prompt]
+
+    logger.debug(f"Flight json check: {flights_json}")
     augmented_hotel_details_objects_json = [h.model_dump() for h in augmented_hotel_objects] if augmented_hotel_objects else []
     activities_list_json = [a.model_dump() for a in activities_list]
     travel_options_json = [option.model_dump() for option in travel_options]
@@ -501,6 +502,7 @@ def itinerary_agent_node(state: TravelPlannerState):
 
 
     final_itinerary_data = compiled_itinerary_object_partial.model_dump()
+    logger.debug(f"Compiled Itinerary Data (raw): {final_itinerary_data}")
     final_itinerary_data["user_request_summary"] = user_info
 
     try:
