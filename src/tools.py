@@ -36,7 +36,6 @@ def fetch_flights(source: str, destination: str, departure_date: str, return_dat
         "arrival_id": destination,
         "outbound_date": departure_date,
         "return_date": return_date,
-        "stops": "2", 
         "currency": "USD",
         "hl": "en",
         "api_key": SERPAPI_API_KEY
